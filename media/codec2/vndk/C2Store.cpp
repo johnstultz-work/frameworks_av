@@ -452,12 +452,16 @@ public:
                 GetCodec2PlatformAllocatorStore();
         std::shared_ptr<C2Allocator> allocator;
         c2_status_t res = C2_NOT_FOUND;
+    
+        ALOGE("JDB: %s %s:%i - allocatorId: %i\n", __func__, __FILE__, __LINE__, (int)allocatorId);
 
         if (allocatorId == C2AllocatorStore::DEFAULT_LINEAR) {
+	    ALOGE("JDB: %s %i == C2AllocatorStore::DEFAULT_LINEAR\n", __func__, (int)allocatorId);
             allocatorId = GetPreferredLinearAllocatorId(GetCodec2PoolMask());
         }
         switch(allocatorId) {
             case C2PlatformAllocatorStore::ION: /* also ::DMABUFHEAP */
+	    ALOGE("JDB: %s %i == C2AllocatorStore::ION/DMABUFHEAP\n", __func__, (int)allocatorId);
                 res = allocatorStore->fetchAllocator(
                         C2PlatformAllocatorStore::ION, &allocator);
                 if (res == C2_OK) {
@@ -472,6 +476,7 @@ public:
                 }
                 break;
             case C2PlatformAllocatorStore::BLOB:
+	    ALOGE("JDB: %s %i == C2AllocatorStore::BLOB\n", __func__, (int)allocatorId);
                 res = allocatorStore->fetchAllocator(
                         C2PlatformAllocatorStore::BLOB, &allocator);
                 if (res == C2_OK) {
@@ -487,6 +492,7 @@ public:
                 break;
             case C2PlatformAllocatorStore::GRALLOC:
             case C2AllocatorStore::DEFAULT_GRAPHIC:
+	    ALOGE("JDB: %s %i == C2AllocatorStore::GRALLOC/GRAPHIC\n", __func__, (int)allocatorId);
                 res = allocatorStore->fetchAllocator(
                         C2AllocatorStore::DEFAULT_GRAPHIC, &allocator);
                 if (res == C2_OK) {
@@ -500,6 +506,7 @@ public:
                 }
                 break;
             case C2PlatformAllocatorStore::BUFFERQUEUE:
+	    ALOGE("JDB: %s %i == C2AllocatorStore::BUFFERQUEEU\n", __func__, (int)allocatorId);
                 res = allocatorStore->fetchAllocator(
                         C2PlatformAllocatorStore::BUFFERQUEUE, &allocator);
                 if (res == C2_OK) {
@@ -516,15 +523,19 @@ public:
             default:
                 // Try to create block pool from platform store plugins.
                 std::shared_ptr<C2BlockPool> ptr;
+	       ALOGE("JDB: %s %i == ? calling createBlockPool (%i, %i)\n", __func__, (int)allocatorId, (int)allocatorId, (int)poolId);
                 res = C2PlatformStorePluginLoader::GetInstance()->createBlockPool(
                         allocatorId, poolId, &ptr);
                 if (res == C2_OK) {
+			ALOGE("JDB: %s createBlockPool OK!\n", __func__);
                     *pool = ptr;
                     mBlockPools[poolId] = ptr;
                     mComponents[poolId].insert(
                            mComponents[poolId].end(),
                            components.begin(), components.end());
-                }
+                } else
+			ALOGE("JDB: %s createBlockPool failed!\n", __func__);
+		
                 break;
         }
         return res;
@@ -558,10 +569,12 @@ public:
                         });
                 if (found != mComponents[blockPoolId].end()) {
                     *pool = ptr;
+		    ALOGE("JDB: %s returning true\n", __func__);
                     return true;
                 }
             }
         }
+	ALOGE("JDB: %s returning false\n", __func__);
         return false;
     }
 
@@ -587,20 +600,24 @@ c2_status_t GetCodec2BlockPool(
     std::shared_ptr<C2Allocator> allocator;
     c2_status_t res = C2_NOT_FOUND;
 
+    ALOGE("JDB: %s id: %i\n", __func__, (int)id);
     if (id >= C2BlockPool::PLATFORM_START) {
         if (sBlockPoolCache->getBlockPool(id, component, pool)) {
+	    ALOGE("JDB: %s id > PLATFORM_START && getBlockPool returned something\n", __func__); 
             return C2_OK;
         }
     }
 
     switch (id) {
     case C2BlockPool::BASIC_LINEAR:
+        ALOGE("JDB: %s id: %i == C2BlockPool::BASIC_LINEAR\n", __func__, (int)id);
         res = allocatorStore->fetchAllocator(C2AllocatorStore::DEFAULT_LINEAR, &allocator);
         if (res == C2_OK) {
             *pool = std::make_shared<C2BasicLinearBlockPool>(allocator);
         }
         break;
     case C2BlockPool::BASIC_GRAPHIC:
+        ALOGE("JDB: %s id: %i == C2BlockPool::BASIC_GRAPHIC\n", __func__, (int)id);
         res = allocatorStore->fetchAllocator(C2AllocatorStore::DEFAULT_GRAPHIC, &allocator);
         if (res == C2_OK) {
             *pool = std::make_shared<C2BasicGraphicBlockPool>(allocator);
@@ -608,6 +625,7 @@ c2_status_t GetCodec2BlockPool(
         break;
     // TODO: remove this. this is temporary
     case C2BlockPool::PLATFORM_START:
+        ALOGE("JDB: %s id: %i == C2BlockPool::PLATFORM_START\n", __func__, (int)id);
         res = sBlockPoolCache->_createBlockPool(
                 C2PlatformAllocatorStore::BUFFERQUEUE, {component}, id, pool);
         break;
@@ -943,7 +961,7 @@ private:
 c2_status_t C2PlatformComponentStore::ComponentModule::init(
         std::string libPath) {
     ALOGV("in %s", __func__);
-    ALOGV("loading dll");
+    ALOGV("loading dll (%s)", libPath.c_str());
 
     if(!createFactory) {
         mLibHandle = dlopen(libPath.c_str(), RTLD_NOW|RTLD_NODELETE);
@@ -1002,12 +1020,10 @@ c2_status_t C2PlatformComponentStore::ComponentModule::init(
 }
 
 C2PlatformComponentStore::ComponentModule::~ComponentModule() {
-    ALOGV("in %s", __func__);
     if (destroyFactory && mComponentFactory) {
         destroyFactory(mComponentFactory);
     }
     if (mLibHandle) {
-        ALOGV("unloading dll");
         dlclose(mLibHandle);
     }
 }

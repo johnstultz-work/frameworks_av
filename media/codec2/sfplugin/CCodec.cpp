@@ -692,6 +692,7 @@ status_t CCodec::tryAndReportOnError(std::function<status_t()> job) {
 }
 
 void CCodec::initiateAllocateComponent(const sp<AMessage> &msg) {
+    ALOGE("JDB: %s\n", __func__);
     auto setAllocating = [this] {
         Mutexed<State>::Locked state(mState);
         if (state->get() != RELEASED) {
@@ -718,7 +719,7 @@ void CCodec::allocate(const sp<MediaCodecInfo> &codecInfo) {
         mCallback->onError(UNKNOWN_ERROR, ACTION_CODE_FATAL);
         return;
     }
-    ALOGD("allocate(%s)", codecInfo->getCodecName());
+    ALOGE("allocate(%s)", codecInfo->getCodecName());
     mClientListener.reset(new ClientListener(this));
 
     AString componentName = codecInfo->getCodecName();
@@ -792,6 +793,7 @@ void CCodec::initiateConfigureComponent(const sp<AMessage> &format) {
 
 void CCodec::configure(const sp<AMessage> &msg) {
     std::shared_ptr<Codec2Client::Component> comp;
+    ALOGE("JDB: %s starting\n", __func__);
     auto checkAllocated = [this, &comp] {
         Mutexed<State>::Locked state(mState);
         if (state->get() != ALLOCATED) {
@@ -1412,6 +1414,7 @@ void CCodec::configure(const sp<AMessage> &msg) {
     config->queryConfiguration(comp);
 
     mCallback->onComponentConfigured(config->mInputFormat, config->mOutputFormat);
+    ALOGE("JDB: %s done\n", __func__);
 }
 
 void CCodec::initiateCreateInputSurface() {
@@ -1628,23 +1631,29 @@ void CCodec::initiateStart() {
 }
 
 void CCodec::start() {
+    ALOGE("JDB: %s starting!\n", __func__);
     std::shared_ptr<Codec2Client::Component> comp;
     auto checkStarting = [this, &comp] {
         Mutexed<State>::Locked state(mState);
         if (state->get() != STARTING) {
+    	    ALOGE("JDB: %s errorred Line: %i!\n", __func__, __LINE__);
             return UNKNOWN_ERROR;
         }
         comp = state->comp;
+    	ALOGE("JDB: %s returned ok line: %i!\n", __func__, __LINE__);
         return OK;
     };
     if (tryAndReportOnError(checkStarting) != OK) {
+    	ALOGE("JDB: %s errorred Line: %i!\n", __func__, __LINE__);
         return;
     }
 
+    ALOGE("JDB: %s calling component start!\n", __func__);
     c2_status_t err = comp->start();
     if (err != C2_OK) {
         mCallback->onError(toStatusT(err, C2_OPERATION_Component_start),
                            ACTION_CODE_FATAL);
+    	ALOGE("JDB: %s errorred Line: %i!\n", __func__, __LINE__);
         return;
     }
     sp<AMessage> inputFormat;
@@ -1665,11 +1674,14 @@ void CCodec::start() {
     }
     if (err2 != OK) {
         mCallback->onError(err2, ACTION_CODE_FATAL);
+    	ALOGE("JDB: %s errorred Line: %i!\n", __func__, __LINE__);
         return;
     }
+    ALOGE("JDB: %s calling Channel start!\n", __func__);
     err2 = mChannel->start(inputFormat, outputFormat, buffersBoundToCodec);
     if (err2 != OK) {
         mCallback->onError(err2, ACTION_CODE_FATAL);
+    	ALOGE("JDB: %s errorred Line: %i!\n", __func__, __LINE__);
         return;
     }
 
@@ -1679,14 +1691,17 @@ void CCodec::start() {
             return UNKNOWN_ERROR;
         }
         state->set(RUNNING);
+	ALOGE("JDB: %s called set and returned\n", __func__);
         return OK;
     };
     if (tryAndReportOnError(setRunning) != OK) {
+    	ALOGE("JDB: %s errorred Line: %i!\n", __func__, __LINE__);
         return;
     }
     mCallback->onStartCompleted();
 
     (void)mChannel->requestInitialInputBuffers();
+    ALOGE("JDB: %s done!\n", __func__);
 }
 
 void CCodec::initiateShutdown(bool keepComponentAllocated) {

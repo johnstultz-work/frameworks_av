@@ -253,6 +253,7 @@ C2DmaBufAllocation::C2DmaBufAllocation(BufferAllocator& alloc, size_t size, C2St
     int ret = 0;
 
     bufferFd = alloc.Alloc(heap_name, size, flags);
+    ALOGE("JDB: %s allocated %ld from %s => fd: %i\n", __func__, (long)size, heap_name.c_str(), bufferFd);
     if (bufferFd < 0) {
         ret = bufferFd;
     }

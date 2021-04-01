@@ -192,7 +192,7 @@ AString QueryMediaTypeImpl(
     c2_status_t c2err = configurable->query(
             {}, { PORT::PARAM_TYPE, STREAM::PARAM_TYPE }, C2_DONT_BLOCK, &queried);
     if (c2err != C2_OK && queried.size() == 0) {
-        ALOGD("Query media type failed => %s", asString(c2err));
+        ALOGD("Query (%s) media type failed => %s", configurable->getName().c_str(), asString(c2err));
     } else {
         PORT *portMediaType =
             PORT::From(queried[0].get());
@@ -956,7 +956,7 @@ status_t CCodecConfig::initialize(
     std::vector<std::unique_ptr<C2Param>> queried;
     c2_status_t c2err = configurable->query({ &domain, &kind }, {}, C2_DONT_BLOCK, &queried);
     if (c2err != C2_OK) {
-        ALOGD("Query domain & kind failed => %s", asString(c2err));
+        ALOGD("Query (%s) domain & kind failed => %s", configurable->getName().c_str(), asString(c2err));
         // TEMP: determine kind from component name
         if (kind.value == C2Component::KIND_OTHER) {
             if (configurable->getName().find("encoder") != std::string::npos) {

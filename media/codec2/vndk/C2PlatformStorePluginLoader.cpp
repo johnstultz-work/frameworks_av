@@ -35,18 +35,20 @@ constexpr const char kStorePluginPath[] = "libc2plugin_store.so";
 C2PlatformStorePluginLoader::C2PlatformStorePluginLoader(const char *libPath)
     : mCreateBlockPool(nullptr),
       mCreateAllocator(nullptr) {
+
+    ALOGE("JDB: %s \n", __func__);
     mLibHandle = dlopen(libPath, RTLD_NOW | RTLD_NODELETE);
     if (mLibHandle == nullptr) {
-        ALOGD("Failed to load library: %s (%s)", libPath, dlerror());
+        ALOGE("Failed to load library: %s (%s)", libPath, dlerror());
         return;
     }
     mCreateBlockPool = (CreateBlockPoolFunc)dlsym(mLibHandle, "CreateBlockPool");
     if (mCreateBlockPool == nullptr) {
-        ALOGD("Failed to find symbol: CreateBlockPool (%s)", dlerror());
+        ALOGE("Failed to find symbol: CreateBlockPool (%s)", dlerror());
     }
     mCreateAllocator = (CreateAllocatorFunc)dlsym(mLibHandle, "CreateAllocator");
     if (mCreateAllocator == nullptr) {
-        ALOGD("Failed to find symbol: CreateAllocator (%s)", dlerror());
+        ALOGE("Failed to find symbol: CreateAllocator (%s)", dlerror());
     }
 }
 
@@ -60,6 +62,7 @@ C2PlatformStorePluginLoader::~C2PlatformStorePluginLoader() {
 c2_status_t C2PlatformStorePluginLoader::createBlockPool(
         ::C2Allocator::id_t allocatorId, ::C2BlockPool::local_id_t blockPoolId,
         std::shared_ptr<C2BlockPool>* pool) {
+    ALOGE("JDB: %s %s:%i\n", __func__, __FILE__, __LINE__);
     if (mCreateBlockPool == nullptr) {
         ALOGD("Handle or CreateBlockPool symbol is null");
         return C2_NOT_FOUND;
@@ -70,12 +73,14 @@ c2_status_t C2PlatformStorePluginLoader::createBlockPool(
         *pool = ptr;
         return C2_OK;
     }
-    ALOGD("Failed to CreateBlockPool by allocator id: %u", allocatorId);
+    ALOGE("JDB: Failed to CreateBlockPool by allocator id: %u", allocatorId);
     return C2_BAD_INDEX;
 }
 
 c2_status_t C2PlatformStorePluginLoader::createAllocator(
         ::C2Allocator::id_t allocatorId, std::shared_ptr<C2Allocator>* const allocator) {
+
+    ALOGE("JDB: %s %s:%i\n", __func__, __FILE__, __LINE__);
     if (mCreateAllocator == nullptr) {
         ALOGD("Handle or CreateAllocator symbol is null");
         return C2_NOT_FOUND;

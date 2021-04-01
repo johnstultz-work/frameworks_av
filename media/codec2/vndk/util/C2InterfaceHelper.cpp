@@ -749,6 +749,9 @@ c2_status_t C2InterfaceHelper::config(
         }
     }
 
+    if (paramNotFound)
+       C2_LOG(ERROR) << "JDB: C2InterfaceHelper::config paramNotFound!"; 
+
     return (paramCorrupted ? C2_CORRUPTED :
             paramBlocking ? C2_BLOCKING :
             paramTimedOut ? C2_TIMED_OUT :

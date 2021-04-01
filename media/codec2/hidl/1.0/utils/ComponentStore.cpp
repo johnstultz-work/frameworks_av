@@ -172,6 +172,7 @@ c2_status_t ComponentStore::validateSupportedParams(
                     mParamReflector->describe(coreIndex);
             if (!structDesc) {
                 // All supported params must be described
+		LOG(ERROR) << "JDB ComponentStore::validateSupportedParams returning bad index!";
                 res = C2_BAD_INDEX;
             }
             mStructDescriptors.insert({ coreIndex, structDesc });
@@ -234,6 +235,7 @@ Return<void> ComponentStore::createInterface(
         const hidl_string& name,
         createInterface_cb _hidl_cb) {
     std::shared_ptr<C2ComponentInterface> c2interface;
+    LOG(ERROR) << "JDB ComponentStore::createInterface: calling createInterface on " << name;
     c2_status_t res = mStore->createInterface(name, &c2interface);
 
     sp<IComponentInterface> interface;

@@ -214,6 +214,7 @@ ResultStatus Accessor::Impl::allocate(
     std::unique_lock<std::mutex> lock(mBufferPool.mMutex);
     mBufferPool.processStatusMessages();
     ResultStatus status = ResultStatus::OK;
+//    ALOGE("JDB: %s\n", __func__);
     if (!mBufferPool.getFreeBuffer(mAllocator, params, bufferId, handle)) {
         lock.unlock();
         std::shared_ptr<BufferPoolAllocation> alloc;
@@ -309,6 +310,7 @@ Accessor::Impl::Impl::BufferPool::BufferPool()
       mSeq(0),
       mStartSeq(0) {
     mValid = mInvalidationChannel.isValid();
+    ALOGE("JDB: %s\n", __func__);
 }
 
 
@@ -704,7 +706,6 @@ ResultStatus Accessor::Impl::BufferPool::addNewBuffer(
         const std::vector<uint8_t> &params,
         BufferId *pId,
         const native_handle_t** handle) {
-
     BufferId bufferId = mSeq++;
     if (mSeq == Connection::SYNC_BUFFERID) {
         mSeq = 0;
@@ -732,7 +733,7 @@ void Accessor::Impl::BufferPool::cleanUp(bool clearCache) {
         if (mTimestampUs > mLastLogUs + kLogDurationUs ||
                 mStats.buffersNotInUse() > kMaxUnusedBufferCount) {
             mLastLogUs = mTimestampUs;
-            ALOGD("bufferpool2 %p : %zu(%zu size) total buffers - "
+            ALOGD("bufferpool2 cleanup %p : %zu(%zu size) total buffers - "
                   "%zu(%zu size) used buffers - %zu/%zu (recycle/alloc) - "
                   "%zu/%zu (fetch/transfer)",
                   this, mStats.mBuffersCached, mStats.mSizeCached,

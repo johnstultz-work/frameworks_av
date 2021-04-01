@@ -966,6 +966,7 @@ status_t CCodecBufferChannel::start(
     C2ActualPipelineDelayTuning pipelineDelay(0);
     C2SecureModeTuning secureMode(C2Config::SM_UNPROTECTED);
 
+    ALOGE("JDB: %s() starting\n", __func__);
     c2_status_t err = mComponent->query(
             {
                 &iStreamFormat,
@@ -983,9 +984,11 @@ status_t CCodecBufferChannel::start(
             nullptr);
     if (err == C2_BAD_INDEX) {
         if (!iStreamFormat || !oStreamFormat || !kind) {
+            ALOGE("JDB: %s line: %i\n", __func__, __LINE__);
             return UNKNOWN_ERROR;
         }
     } else if (err != C2_OK) {
+        ALOGE("JDB: %s line: %i\n", __func__, __LINE__);
         return UNKNOWN_ERROR;
     }
 
@@ -1004,6 +1007,9 @@ status_t CCodecBufferChannel::start(
 
     std::shared_ptr<C2AllocatorStore> allocatorStore = GetCodec2PlatformAllocatorStore();
     int poolMask = GetCodec2PoolMask();
+
+    ALOGE("JDB: %s poolMask: 0x%lx\n", __func__, (long)poolMask);
+
     C2PlatformAllocatorStore::id_t preferredLinearId = GetPreferredLinearAllocatorId(poolMask);
 
     if (inputFormat != nullptr) {
@@ -1027,6 +1033,7 @@ status_t CCodecBufferChannel::start(
             pools->inputAllocatorId = (graphic) ? C2PlatformAllocatorStore::GRALLOC
                                                 : preferredLinearId;
 
+	    ALOGE("JDB: %s pools->inputAllocatorId: %i (vs %i C2PlatformAllocatorStore::GRALLOC or %i preferredlinear)\n", __func__, pools->inputAllocatorId, C2PlatformAllocatorStore::GRALLOC, preferredLinearId);
             // query C2PortAllocatorsTuning::input from component. If an allocator ID is obtained
             // from component, create the input block pool with given ID. Otherwise, use default IDs.
             std::vector<std::unique_ptr<C2Param>> params;
@@ -1184,6 +1191,7 @@ status_t CCodecBufferChannel::start(
             }
             outputGeneration = output->generation;
         }
+    ALOGE("JDB: %s line: %i\n", __func__, __LINE__);
 
         bool graphic = (oStreamFormat.value == C2BufferData::GRAPHIC);
         C2BlockPool::local_id_t outputPoolId_;
@@ -1194,6 +1202,7 @@ status_t CCodecBufferChannel::start(
             // set default allocator ID.
             pools->outputAllocatorId = (graphic) ? C2PlatformAllocatorStore::GRALLOC
                                                  : preferredLinearId;
+            ALOGE("JDB: %s pools->outputAllocatorId: %i (vs %i (gralloc) or %i(preferredlinear)\n", __func__, pools->outputAllocatorId, C2PlatformAllocatorStore::GRALLOC, preferredLinearId);
 
             // query C2PortAllocatorsTuning::output from component, or use default allocator if
             // unsuccessful.
@@ -1211,9 +1220,11 @@ status_t CCodecBufferChannel::start(
                 if (outputAllocators && outputAllocators->flexCount() > 0) {
                     std::shared_ptr<C2Allocator> allocator;
                     // verify allocator IDs and resolve default allocator
+                    ALOGE("JDB: %s calling fechchAllocator(%i)\n", __func__, outputAllocators->m.values[0]);
                     allocatorStore->fetchAllocator(outputAllocators->m.values[0], &allocator);
                     if (allocator) {
                         pools->outputAllocatorId = allocator->getId();
+			ALOGE("JDB: %s outputAllocatorId switchted to %i\n", __func__, pools->outputAllocatorId);
                     } else {
                         ALOGD("[%s] component requested invalid output allocator ID %u",
                                 mName, outputAllocators->m.values[0]);
@@ -1239,9 +1250,12 @@ status_t CCodecBufferChannel::start(
                     if (surfaceAllocator) {
                         std::shared_ptr<C2Allocator> allocator;
                         // verify allocator IDs and resolve default allocator
+			ALOGE("JDB: %s calling surface fechchAllocator(%i)\n", __func__, surfaceAllocator->value);
+
                         allocatorStore->fetchAllocator(surfaceAllocator->value, &allocator);
                         if (allocator) {
                             pools->outputAllocatorId = allocator->getId();
+			    ALOGE("JDB: %s outputAllocatorId i(surface) switchted to %i\n", __func__, pools->outputAllocatorId);
                         } else {
                             ALOGD("[%s] component requested invalid surface output allocator ID %u",
                                     mName, surfaceAllocator->value);
@@ -1252,6 +1266,7 @@ status_t CCodecBufferChannel::start(
                 if (pools->outputAllocatorId == C2PlatformAllocatorStore::GRALLOC
                         && err != C2_OK
                         && ((poolMask >> C2PlatformAllocatorStore::BUFFERQUEUE) & 1)) {
+		    ALOGE("JDB: %s switching outputAllocatorId to C2PlatformAllocatorStore::BUFFERQUEUE from C2PlatformAllocatorStore::GRALLOC\n", __func__);
                     pools->outputAllocatorId = C2PlatformAllocatorStore::BUFFERQUEUE;
                 }
             }
@@ -1259,7 +1274,7 @@ status_t CCodecBufferChannel::start(
             if ((poolMask >> pools->outputAllocatorId) & 1) {
                 err = mComponent->createBlockPool(
                         pools->outputAllocatorId, &pools->outputPoolId, &pools->outputPoolIntf);
-                ALOGI("[%s] Created output block pool with allocatorID %u => poolID %llu - %s",
+                ALOGD("[%s] Created output block pool with allocatorID %u => poolID %llu - %s",
                         mName, pools->outputAllocatorId,
                         (unsigned long long)pools->outputPoolId,
                         asString(err));
@@ -1270,6 +1285,7 @@ status_t CCodecBufferChannel::start(
                 // use basic pool instead
                 pools->outputPoolId =
                     graphic ? C2BlockPool::BASIC_GRAPHIC : C2BlockPool::BASIC_LINEAR;
+		ALOGE("JDB: %s falling back to poolId: %s", __func__, graphic?"BASIC_GRAPHIC":"BASIC_LINEAR");
             }
 
             // Configure output block pool ID as parameter C2PortBlockPoolsTuning::output to
@@ -1282,6 +1298,7 @@ status_t CCodecBufferChannel::start(
             ALOGD("[%s] Configured output block pool ids %llu => %s",
                     mName, (unsigned long long)poolIdsTuning->m.values[0], asString(err));
             outputPoolId_ = pools->outputPoolId;
+	    ALOGE("JDB: %s final outputPoolId_: %llu\n", __func__, (unsigned long long)outputPoolId_);
         }
 
         Mutexed<Output>::Locked output(mOutput);
@@ -1356,7 +1373,7 @@ status_t CCodecBufferChannel::start(
                 .smoothnessFactor(kSmoothnessFactor);
         watcher->flush();
     }
-
+    ALOGE("JDB: %s line: %i returning OK\n", __func__, __LINE__);
     mInputMetEos = false;
     mSync.start();
     return OK;

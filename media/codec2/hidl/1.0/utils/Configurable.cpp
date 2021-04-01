@@ -140,6 +140,7 @@ Return<void> CachedConfigurable::querySupportedParams(
                 break;
             }
         } else {
+	    LOG(ERROR) << "JDB: CachedConfigurable::querySupportedParams numm supported param #" << srcIx;
             res = Status::BAD_INDEX;
         }
     }

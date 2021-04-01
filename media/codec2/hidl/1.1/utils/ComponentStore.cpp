@@ -172,6 +172,7 @@ c2_status_t ComponentStore::validateSupportedParams(
                     mParamReflector->describe(coreIndex);
             if (!structDesc) {
                 // All supported params must be described
+		LOG(ERROR) << "JDB: ComponentStore::validateSupportedParams returning bAD_INDEX"; 
                 res = C2_BAD_INDEX;
             }
             mStructDescriptors.insert({ coreIndex, structDesc });

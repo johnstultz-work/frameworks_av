@@ -880,6 +880,7 @@ std::vector<std::string> const& Codec2Client::GetServiceNames() {
                             hidl_vec<hidl_string> const& instanceNames) {
                         for (hidl_string const& instanceName : instanceNames) {
                             char const* name = instanceName.c_str();
+			    LOG(ERROR) << "JDB got service name: " << name << "\n";
                             if (strncmp(name, "default", 7) == 0) {
                                 defaultNames.emplace_back(name);
                             } else if (strncmp(name, "vendor", 6) == 0) {
